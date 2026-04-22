@@ -22,9 +22,19 @@ type Props = {
     tension?: number;
     borderDash?: number[];
   }>;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  compactAxes?: boolean;
 };
 
-export default function AnalysisChart({ time, signal = [], datasets = [] }: Props) {
+export default function AnalysisChart({
+  time,
+  signal = [],
+  datasets = [],
+  xAxisLabel = "Time (s)",
+  yAxisLabel = "Y",
+  compactAxes = false,
+}: Props) {
   const chartDatasets =
     datasets.length > 0
       ? datasets.map((dataset) => ({
@@ -125,9 +135,10 @@ export default function AnalysisChart({ time, signal = [], datasets = [] }: Prop
           color: "#b0c4de",
           font: {
             family: "'JetBrains Mono', monospace",
-            size: 10,
+            size: compactAxes ? 8 : 10,
             weight: 400,
           },
+          maxTicksLimit: compactAxes ? 7 : undefined,
         },
         grid: {
           color: "#1e3a5f",
@@ -135,9 +146,9 @@ export default function AnalysisChart({ time, signal = [], datasets = [] }: Prop
         },
         title: {
           display: true,
-          text: "Time (s)",
+          text: xAxisLabel,
           color: "#b0c4de",
-          font: { size: 11, weight: 600 },
+          font: { size: compactAxes ? 10 : 11, weight: 600 },
         },
       },
       y: {
@@ -148,9 +159,10 @@ export default function AnalysisChart({ time, signal = [], datasets = [] }: Prop
           color: "#b0c4de",
           font: {
             family: "'JetBrains Mono', monospace",
-            size: 10,
+            size: compactAxes ? 8 : 10,
             weight: 400,
           },
+          maxTicksLimit: compactAxes ? 6 : undefined,
         },
         grid: {
           color: "#1e3a5f",
@@ -158,9 +170,9 @@ export default function AnalysisChart({ time, signal = [], datasets = [] }: Prop
         },
         title: {
           display: true,
-          text: "Y",
+          text: yAxisLabel,
           color: "#b0c4de",
-          font: { size: 11, weight: 600 },
+          font: { size: compactAxes ? 10 : 11, weight: 600 },
         },
       },
     },
