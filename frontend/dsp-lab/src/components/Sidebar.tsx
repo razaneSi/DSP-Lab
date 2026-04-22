@@ -9,7 +9,7 @@ type Props = {
 
 export default function Sidebar({ current, setCurrent, isOpen, onToggle }: Props) {
   const tp1Items = ["analysis", "operations", "derivatives", "parity"];
-  const tp2Items = ["fourier", "transfourier"];
+  const tp2Items = ["fourier", "transfourier", "decomposition"];
   const [openSection, setOpenSection] = useState<"tp1" | "tp2">(
     tp1Items.includes(current) ? "tp1" : "tp2"
   );
@@ -137,9 +137,8 @@ export default function Sidebar({ current, setCurrent, isOpen, onToggle }: Props
               </button>
 
               <button
-                className="nav-item nav-item--disabled"
-                disabled
-                title="Coming soon"
+                className={`nav-item ${current === "decomposition" ? "active" : ""}`}
+                onClick={() => setCurrent("decomposition")}
               >
                 <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
