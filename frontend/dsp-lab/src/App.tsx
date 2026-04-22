@@ -5,6 +5,7 @@ import SignalDerivatives from "./components/derivatives/SignalDerivatives";
 import SignalParity from "./components/parity/SignalParity";
 import FourierSeries from "./components/fourier/FourierSeries";
 import FourierTransform from "./components/transfourier/FourierTransform";
+import SignalDecomposition from "./components/decomposition/SignalDecomposition";
 import Sidebar from "./components/Sidebar";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
     if (activeTab === "parity") return <SignalParity />;
     if (activeTab === "fourier") return <FourierSeries />;
     if (activeTab === "transfourier") return <FourierTransform />;
+    if (activeTab === "decomposition") return <SignalDecomposition />;
     return null;
   };
 
