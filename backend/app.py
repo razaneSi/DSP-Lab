@@ -111,6 +111,94 @@ def evaluate_sympy_expression(expr, time):
     if signal.shape == ():
         signal = np.full_like(time, float(signal), dtype=float)
     return signal
+
+
+def _fmt_sympy(value):
+    return sp.sstr(sp.simplify(value))
+
+
+def _linear_in_t(arg):
+    arg = sp.expand(sp.simplify(arg))
+    a = sp.simplify(sp.diff(arg, t))
+    b = sp.simplify(arg - a * t)
+    if b.has(t):
+        return None
+    if sp.simplify(sp.diff(a, t)) != 0:
+        return None
+    if sp.simplify(a) == 0:
+        return None
+    return sp.simplify(a), sp.simplify(b)
+
+
+def closed_form_fourier(expr):
+    expr = sp.simplify(expr)
+
+    if expr.is_Number:
+        return f"{_fmt_sympy(expr)}*δ(f)"
+
+    if expr.is_Add:
+        parts = []
+        for term in expr.as_ordered_terms():
+            mapped = closed_form_fourier(term)
+            if mapped is None:
+                return None
+            parts.append(mapped)
+        return " + ".join(parts)
+
+    if expr.is_Mul:
+        coeff, rest = expr.as_coeff_Mul()
+        if coeff != 1:
+            mapped = closed_form_fourier(rest)
+            if mapped is None:
+                return None
+            return f"{_fmt_sympy(coeff)}*({mapped})"
+
+    if expr.func == sp.cos:
+        info = _linear_in_t(expr.args[0])
+        if info is None:
+            return None
+        a, b = info
+        f0 = sp.simplify(a / (2 * sp.pi))
+        if sp.simplify(b) == 0:
+            return f"1/2[δ(f-{_fmt_sympy(f0)}) + δ(f+{_fmt_sympy(f0)})]"
+        return f"1/2[e^(j({_fmt_sympy(b)}))δ(f-{_fmt_sympy(f0)}) + e^(-j({_fmt_sympy(b)}))δ(f+{_fmt_sympy(f0)})]"
+
+    if expr.func == sp.sin:
+        info = _linear_in_t(expr.args[0])
+        if info is None:
+            return None
+        a, _ = info
+        f0 = sp.simplify(a / (2 * sp.pi))
+        return f"1/(2j)[δ(f-{_fmt_sympy(f0)}) - δ(f+{_fmt_sympy(f0)})]"
+
+    func_name = getattr(expr.func, "__name__", "")
+    if func_name in {"Rect", "Tri"}:
+        info = _linear_in_t(expr.args[0])
+        if info is None:
+            return None
+        a, b = info
+
+        a_abs = sp.simplify(sp.Abs(a))
+        shift = sp.simplify(b / a)
+        amp = f"1/|{_fmt_sympy(a)}|"
+
+        if func_name == "Rect":
+            if sp.simplify(a_abs - 1) == 0 and sp.simplify(b) == 0:
+                base = "sinc(f)"
+            else:
+                base = f"{amp} sinc(f/{_fmt_sympy(a_abs)})"
+        else:
+            if sp.simplify(a_abs - 1) == 0 and sp.simplify(b) == 0:
+                base = "sinc^2(f)"
+            else:
+                base = f"{amp} sinc^2(f/{_fmt_sympy(a_abs)})"
+
+        if sp.simplify(shift) == 0:
+            return base
+
+        return f"{base} e^(j2πf*{_fmt_sympy(shift)})"
+
+    return None
 # ----- Generate signal from expression -----
 
 @app.route("/generate", methods=["POST"])
@@ -272,6 +360,68 @@ def derivatives():
             "second_derivative": second.tolist(),
             "first_expression": "d/dt x(t) (numerical)",
             "second_expression": "d2/dt2 x(t) (numerical)",
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/decomposition", methods=["POST"])
+def decomposition():
+    data = request.json
+    expression = data.get("expression", "")
+
+    try:
+        time = np.arange(-5, 5, 0.01)
+        dt = float(time[1] - time[0])
+
+        original = evaluate_expression(expression, time)
+        first = np.gradient(original, dt)
+        second = np.gradient(first, dt)
+
+        N = len(time)
+        X_f = np.fft.fftshift(np.fft.fft(original)) * dt
+        freq = np.fft.fftshift(np.fft.fftfreq(N, d=dt))
+
+        amplitude = np.abs(X_f)
+        phase = np.where(amplitude > 1e-8, np.angle(X_f, deg=True), 0)
+        real_part = np.real(X_f)
+        imag_part = np.imag(X_f)
+
+        symbolic_locals = {
+            "t": t,
+            "pi": sp.pi,
+            "sin": sp.sin,
+            "cos": sp.cos,
+            "exp": sp.exp,
+            "sqrt": sp.sqrt,
+            "sgn": sp.sign,
+            "sign": sp.sign,
+            "Rect": sp.Function("Rect"),
+            "Tri": sp.Function("Tri"),
+            "U": sp.Function("U"),
+            "Dirac": sp.Function("Dirac"),
+            "R": sp.Function("R"),
+        }
+        symbolic_expr = sp.sympify(expression, locals=symbolic_locals)
+        closed_form = closed_form_fourier(symbolic_expr)
+        fourier_expression = (
+            f"X(f) = {closed_form}"
+            if closed_form is not None
+            else "Closed-form not recognized for this input; frequency graphs are computed numerically."
+        )
+
+        return jsonify({
+            "time": time.tolist(),
+            "original": original.tolist(),
+            "first_derivative": first.tolist(),
+            "second_derivative": second.tolist(),
+            "freq": freq.tolist(),
+            "amplitude": amplitude.tolist(),
+            "phase": phase.tolist(),
+            "real_part": real_part.tolist(),
+            "imag_part": imag_part.tolist(),
+            "fourier_expression": fourier_expression,
+            "decomposition_expression": "X(f) = Re{X(f)} + jIm{X(f)} = |X(f)|e^{j∠X(f)}",
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
