@@ -836,6 +836,57 @@ canvas {
     0 8px 18px rgba(0, 188, 212, 0.2);
 }
 
+.decomposition-viz-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.decomposition-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.decomposition-small-panel {
+  min-height: unset;
+}
+
+.decomposition-small-panel .chart-container {
+  height: 300px;
+}
+
+.decomposition-expr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.decomposition-controls-expr {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.decomposition-repr-card {
+  margin-bottom: 0.85rem;
+  padding: 0.9rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.decomposition-repr-card .expressed-title {
+  margin-bottom: 0.45rem;
+}
+
+.decomposition-repr-card .expressed-equation {
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
 .operation-buttons {
   display: flex;
   justify-content: center;
@@ -1187,6 +1238,11 @@ canvas {
 
 @media (max-width: 1200px) {
   .parity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .decomposition-bottom-grid,
+  .decomposition-expr-grid {
     grid-template-columns: 1fr;
   }
 }
