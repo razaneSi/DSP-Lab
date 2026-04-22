@@ -25,6 +25,9 @@ export const operateSignals = (
 export const getSignalDerivatives = (expression: string) =>
   API.post("/derivatives", { expression });
 
+export const getSignalDecomposition = (expression: string) =>
+  API.post("/decomposition", { expression });
+
 
 /*export const getFrequency = (expression: string) =>
   API.post("/frequency", { expression });*/
